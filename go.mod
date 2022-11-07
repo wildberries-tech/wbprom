@@ -1,4 +1,4 @@
-module wbprom
+module github.com/wildberries-tech/wbprom
 
 go 1.18
 
