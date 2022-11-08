@@ -1,4 +1,4 @@
-package prom
+package wbprom
 
 import "github.com/prometheus/client_golang/prometheus"
 

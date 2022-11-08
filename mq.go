@@ -1,5 +1,5 @@
 // nolint
-package prom
+package wbprom
 
 import (
 	"time"
