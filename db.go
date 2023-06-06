@@ -17,23 +17,24 @@ type dbMetrics struct {
 	WaitDurationSec prometheus.Summary
 }
 
-func NewDbMetrics(namespace, service, host, dbName, name string) *dbMetrics {
+func NewDbMetrics(namespace, subsystem, service, host, dbName, name string) *dbMetrics {
 	return &dbMetrics{
-		NbMaxConns:      newGauge(namespace, service, host, dbName, "nb_max_conns", "Maximum number of open connections to the database."),
-		NbOpenConns:     newGauge(namespace, service, host, dbName, "nb_open_conns", "The number of established connections both in use and idle."),
-		NbUsedConns:     newGauge(namespace, service, host, dbName, "nb_used_conns", "The number of connections currently in use."),
-		WaitCount:       newGauge(namespace, service, host, dbName, "wait_count", "The total number of connections waited for."),
-		WaitDurationSec: newSummary(namespace, service, host, dbName, "wait_duration_sec", "The total time blocked waiting for a new connection (in seconds)."),
+		NbMaxConns:      newGauge(namespace, subsystem, service, host, dbName, "nb_max_conns", "Maximum number of open connections to the database."),
+		NbOpenConns:     newGauge(namespace, subsystem, service, host, dbName, "nb_open_conns", "The number of established connections both in use and idle."),
+		NbUsedConns:     newGauge(namespace, subsystem, service, host, dbName, "nb_used_conns", "The number of connections currently in use."),
+		WaitCount:       newGauge(namespace, subsystem, service, host, dbName, "wait_count", "The total number of connections waited for."),
+		WaitDurationSec: newSummary(namespace, subsystem, service, host, dbName, "wait_duration_sec", "The total time blocked waiting for a new connection (in seconds)."),
 	}
 }
 
-func newGauge(namespace, service, host, dbName, name, help string) prometheus.Gauge {
+func newGauge(namespace, subsystem, service, host, dbName, name, help string) prometheus.Gauge {
 	g := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: name,
 			Help: help,
 			ConstLabels: prometheus.Labels{
 				"namespace": namespace,
+				"subsystem": subsystem,
 				"service":   service,
 				"host":      host,
 				"db":        dbName,
@@ -43,13 +44,14 @@ func newGauge(namespace, service, host, dbName, name, help string) prometheus.Ga
 	return g
 }
 
-func newSummary(namespace, service, host, dbName, name, help string) prometheus.Summary {
+func newSummary(namespace, subsystem, service, host, dbName, name, help string) prometheus.Summary {
 	s := prometheus.NewSummary(
 		prometheus.SummaryOpts{
 			Name: name,
 			Help: help,
 			ConstLabels: prometheus.Labels{
 				"namespace": namespace,
+				"subsystem": subsystem,
 				"service":   service,
 				"host":      host,
 				"db":        dbName,
