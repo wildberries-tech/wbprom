@@ -17,7 +17,7 @@ type dbMetrics struct {
 	WaitDurationSec prometheus.Summary
 }
 
-func NewDbMetrics(namespace, subsystem, service, host, dbName, name string) *dbMetrics {
+func NewDbMetrics(namespace, subsystem, service, host, dbName string) *dbMetrics {
 	return &dbMetrics{
 		NbMaxConns:      newGauge(namespace, subsystem, service, host, dbName, "nb_max_conns", "Maximum number of open connections to the database."),
 		NbOpenConns:     newGauge(namespace, subsystem, service, host, dbName, "nb_open_conns", "The number of established connections both in use and idle."),
