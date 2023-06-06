@@ -6,6 +6,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type SqlMetrics interface {
+	Inc(query, success string)
+	WriteTiming(start time.Time, query, success string)
+}
+
 // sqlMetrics is a struct that allows to write metrics of count and latency of sql queries
 type sqlMetrics struct {
 	queries *prometheus.CounterVec
