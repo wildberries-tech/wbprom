@@ -17,49 +17,43 @@ type dbMetrics struct {
 	WaitDurationSec prometheus.Summary
 }
 
-func NewDbMetrics(ns, subsystem, dbName string) *dbMetrics {
+func NewDbMetrics(namespace, service, host, dbName, name string) *dbMetrics {
 	return &dbMetrics{
-		NbMaxConns:      newGauge(ns, subsystem, "nb_max_conns", dbName),
-		NbOpenConns:     newGauge(ns, subsystem, "nb_open_conns", dbName),
-		NbUsedConns:     newGauge(ns, subsystem, "nb_used_conns", dbName),
-		WaitCount:       newGauge(ns, subsystem, "wait_count", dbName),
-		WaitDurationSec: newSummary(ns, subsystem, "wait_duration_sec", dbName),
+		NbMaxConns:      newGauge(namespace, service, host, dbName, "nb_max_conns", "Maximum number of open connections to the database."),
+		NbOpenConns:     newGauge(namespace, service, host, dbName, "nb_open_conns", "The number of established connections both in use and idle."),
+		NbUsedConns:     newGauge(namespace, service, host, dbName, "nb_used_conns", "The number of connections currently in use."),
+		WaitCount:       newGauge(namespace, service, host, dbName, "wait_count", "The total number of connections waited for."),
+		WaitDurationSec: newSummary(namespace, service, host, dbName, "wait_duration_sec", "The total time blocked waiting for a new connection (in seconds)."),
 	}
 }
 
-func newGauge(ns, subsystem, name, labelDb string) prometheus.Gauge {
-	var labels prometheus.Labels
-	if labelDb != "" {
-		labels = map[string]string{
-			"db": labelDb,
-		}
-	}
-
+func newGauge(namespace, service, host, dbName, name, help string) prometheus.Gauge {
 	g := prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Namespace:   ns,
-			Subsystem:   subsystem,
-			Name:        name,
-			ConstLabels: labels,
+			Name: name,
+			Help: help,
+			ConstLabels: prometheus.Labels{
+				"namespace": namespace,
+				"service":   service,
+				"host":      host,
+				"db":        dbName,
+			},
 		})
 	prometheus.MustRegister(g)
 	return g
 }
 
-func newSummary(ns, subsystem, name, labelDb string) prometheus.Summary {
-	var labels prometheus.Labels
-	if labelDb != "" {
-		labels = map[string]string{
-			"db": labelDb,
-		}
-	}
-
+func newSummary(namespace, service, host, dbName, name, help string) prometheus.Summary {
 	s := prometheus.NewSummary(
 		prometheus.SummaryOpts{
-			Namespace:   ns,
-			Subsystem:   subsystem,
-			Name:        name,
-			ConstLabels: labels,
+			Name: name,
+			Help: help,
+			ConstLabels: prometheus.Labels{
+				"namespace": namespace,
+				"service":   service,
+				"host":      host,
+				"db":        dbName,
+			},
 		})
 	prometheus.MustRegister(s)
 	return s

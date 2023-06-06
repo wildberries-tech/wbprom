@@ -17,21 +17,31 @@ type sqlMetrics struct {
 	latency *prometheus.HistogramVec
 }
 
-func NewSqlMetrics(service, host string) *sqlMetrics {
+func NewSqlMetrics(namespace, service, host, dbName string) *sqlMetrics {
 	queriesCollector := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name:        "queries_count",
-			Help:        "How many queries processed",
-			ConstLabels: prometheus.Labels{"app": service, "host": host},
+			Name: "queries_count",
+			Help: "How many queries processed.",
+			ConstLabels: prometheus.Labels{
+				"namespace": namespace,
+				"service":   service,
+				"host":      host,
+				"db":        dbName,
+			},
 		},
 		[]string{"query", "success"},
 	)
 
 	latencyCollector := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:        "queries_latency",
-		Help:        "How long it took to process the query",
-		ConstLabels: prometheus.Labels{"app": service, "host": host},
-		Buckets:     []float64{200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1500, 2000},
+		Name: "queries_latency",
+		Help: "How long it took to process the query.",
+		ConstLabels: prometheus.Labels{
+			"namespace": namespace,
+			"service":   service,
+			"host":      host,
+			"db":        dbName,
+		},
+		Buckets: []float64{200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1500, 2000},
 	},
 		[]string{"query", "success"},
 	)
