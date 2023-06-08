@@ -17,6 +17,8 @@ type sqlMetrics struct {
 	latency *prometheus.HistogramVec
 }
 
+var _ SqlMetrics = (*sqlMetrics)(nil)
+
 func NewSqlMetrics(namespace, subsystem, service, host, dbName string) *sqlMetrics {
 	queriesCollector := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -34,7 +36,7 @@ func NewSqlMetrics(namespace, subsystem, service, host, dbName string) *sqlMetri
 	)
 
 	latencyCollector := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "queries_latency",
+		Name: "queries_latency_milliseconds",
 		Help: "How long it took to process the query.",
 		ConstLabels: prometheus.Labels{
 			"namespace": namespace,
@@ -64,5 +66,5 @@ func (h *sqlMetrics) Inc(query, success string) {
 // WriteTiming writes time elapsed since the startTime.
 // for the given "query" and "success" fields
 func (h *sqlMetrics) WriteTiming(startTime time.Time, query, success string) {
-	h.latency.WithLabelValues(query, success).Observe(timeFromStart(startTime))
+	h.latency.WithLabelValues(query, success).Observe(MillisecondsFromStart(startTime))
 }

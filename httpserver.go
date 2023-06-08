@@ -6,11 +6,18 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type HttpServerMetric interface {
+	Inc(method, code, path, client string)
+	WriteTiming(startTime time.Time, method, code, path, client string)
+}
+
 // httpServerMetrics is a struct that allows to write metrics of count and latency of http requests
 type httpServerMetric struct {
 	reqs    *prometheus.CounterVec
 	latency *prometheus.HistogramVec
 }
+
+var _ HttpServerMetric = (*httpServerMetric)(nil)
 
 func NewHttpServerMetrics(appName string) *httpServerMetric {
 	reqsCollector := prometheus.NewCounterVec(
@@ -23,7 +30,7 @@ func NewHttpServerMetrics(appName string) *httpServerMetric {
 	)
 
 	latencyCollector := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:        "reqs_latency",
+		Name:        "reqs_latency_milliseconds",
 		Help:        "How long it took to process the request",
 		ConstLabels: prometheus.Labels{"app": appName},
 		Buckets:     []float64{5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 1000},
@@ -40,7 +47,8 @@ func NewHttpServerMetrics(appName string) *httpServerMetric {
 }
 
 // Inc increases requests counter by one.
-//  method, code, path and client are label values for "method", "status", "path" and "client" fields
+//
+//	method, code, path and client are label values for "method", "status", "path" and "client" fields
 func (h *httpServerMetric) Inc(method, code, path, client string) {
 	h.reqs.WithLabelValues(method, code, path, client).Inc()
 }
@@ -48,5 +56,5 @@ func (h *httpServerMetric) Inc(method, code, path, client string) {
 // WriteTiming writes time elapsed since the startTime.
 // method, code, path and client are label values for "method", "status", "path" and "client" fields
 func (h *httpServerMetric) WriteTiming(startTime time.Time, method, code, path, client string) {
-	h.latency.WithLabelValues(method, code, path, client).Observe(timeFromStart(startTime))
+	h.latency.WithLabelValues(method, code, path, client).Observe(MillisecondsFromStart(startTime))
 }
