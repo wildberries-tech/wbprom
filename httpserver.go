@@ -19,21 +19,31 @@ type httpServerMetric struct {
 
 var _ HttpServerMetric = (*httpServerMetric)(nil)
 
-func NewHttpServerMetrics(appName string) *httpServerMetric {
+func NewHttpServerMetrics(namespace, subsystem, service, host string) *httpServerMetric {
 	reqsCollector := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name:        "reqs_count",
-			Help:        "How many HTTP requests processed",
-			ConstLabels: prometheus.Labels{"app": appName},
+			Name: "reqs_count",
+			Help: "How many HTTP requests processed",
+			ConstLabels: prometheus.Labels{
+				"namespace": namespace,
+				"subsystem": subsystem,
+				"service":   service,
+				"host":      host,
+			},
 		},
 		[]string{"method", "status", "path", "client"},
 	)
 
 	latencyCollector := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:        "reqs_latency_milliseconds",
-		Help:        "How long it took to process the request",
-		ConstLabels: prometheus.Labels{"app": appName},
-		Buckets:     []float64{5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 1000},
+		Name: "reqs_latency_milliseconds",
+		Help: "How long it took to process the request",
+		ConstLabels: prometheus.Labels{
+			"namespace": namespace,
+			"subsystem": subsystem,
+			"service":   service,
+			"host":      host,
+		},
+		Buckets: []float64{5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 1000},
 	},
 		[]string{"method", "status", "path", "client"},
 	)
