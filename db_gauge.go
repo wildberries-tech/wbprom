@@ -4,18 +4,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type Gauge interface {
-	Add(valueName string, value float64)
-}
-
 // gauge is a struct that allows to add values
-type gauge struct {
+type dbGauge struct {
 	gaugeVec *prometheus.GaugeVec
 }
 
-var _ Gauge = (*gauge)(nil)
+var _ Gauge = (*dbGauge)(nil)
 
-func NewGauge(namespace, subsystem, service string) *gauge {
+func NewDBGauge(namespace, subsystem, service, host, dbName string) *dbGauge {
 	gaugeVec := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "gauge",
 		Help: "What is the value of the parameter.",
@@ -23,6 +19,8 @@ func NewGauge(namespace, subsystem, service string) *gauge {
 			"namespace": namespace,
 			"subsystem": subsystem,
 			"service":   service,
+			"host":      host,
+			"db":        dbName,
 		},
 	},
 		[]string{"value_name"},
@@ -30,12 +28,12 @@ func NewGauge(namespace, subsystem, service string) *gauge {
 
 	prometheus.MustRegister(gaugeVec)
 
-	return &gauge{
+	return &dbGauge{
 		gaugeVec: gaugeVec,
 	}
 }
 
 // Add function adds a given value to the gauge
-func (g *gauge) Add(valueName string, value float64) {
+func (g *dbGauge) Add(valueName string, value float64) {
 	g.gaugeVec.WithLabelValues(valueName).Add(value)
 }
