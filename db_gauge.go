@@ -37,3 +37,8 @@ func NewDBGauge(namespace, subsystem, service, host, dbName string) *dbGauge {
 func (g *dbGauge) Add(valueName string, value float64) {
 	g.gaugeVec.WithLabelValues(valueName).Add(value)
 }
+
+// Set function sets a given value to the gauge
+func (g *dbGauge) Set(valueName string, value float64) {
+	g.gaugeVec.WithLabelValues(valueName).Set(value)
+}
