@@ -1,9 +1,15 @@
 package wbprom
 
 import (
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	routing "github.com/qiangxue/fasthttp-routing"
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
 type HttpServerMetric interface {
@@ -13,13 +19,18 @@ type HttpServerMetric interface {
 
 // httpServerMetrics is a struct that allows to write metrics of count and latency of http requests
 type httpServerMetric struct {
-	reqs    *prometheus.CounterVec
-	latency *prometheus.HistogramVec
+	isNeedToRemoveQueryInPath bool
+	reqs                      *prometheus.CounterVec
+	latency                   *prometheus.HistogramVec
 }
+
+const (
+	AuthClientKey = "http.client"
+)
 
 var _ HttpServerMetric = (*httpServerMetric)(nil)
 
-func NewHttpServerMetrics(namespace, subsystem, service string) *httpServerMetric {
+func NewHttpServerMetrics(namespace, subsystem, service string, isNeedToRemoveQueryInPath bool) *httpServerMetric {
 	reqsCollector := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "reqs_count",
@@ -49,20 +60,86 @@ func NewHttpServerMetrics(namespace, subsystem, service string) *httpServerMetri
 	prometheus.MustRegister(reqsCollector, latencyCollector)
 
 	return &httpServerMetric{
-		reqs:    reqsCollector,
-		latency: latencyCollector,
+		isNeedToRemoveQueryInPath: isNeedToRemoveQueryInPath,
+		reqs:                      reqsCollector,
+		latency:                   latencyCollector,
 	}
+}
+
+func (h *httpServerMetric) checkAndCutPath(path *string) {
+	if h.isNeedToRemoveQueryInPath {
+		return
+	}
+	*path = strings.Split(*path, "?")[0]
+	return
 }
 
 // Inc increases requests counter by one.
 //
 //	method, code, path and client are label values for "method", "status", "path" and "client" fields
 func (h *httpServerMetric) Inc(method, code, path, client string) {
+	h.checkAndCutPath(&path)
 	h.reqs.WithLabelValues(method, code, path, client).Inc()
 }
 
 // WriteTiming writes time elapsed since the startTime.
 // method, code, path and client are label values for "method", "status", "path" and "client" fields
 func (h *httpServerMetric) WriteTiming(startTime time.Time, method, code, path, client string) {
+	h.checkAndCutPath(&path)
 	h.latency.WithLabelValues(method, code, path, client).Observe(MillisecondsFromStart(startTime))
+}
+
+// Handler with metrics for "github.com/fasthttp/router"
+func GetFasthttpHandler() fasthttp.RequestHandler {
+	return fasthttpadaptor.NewFastHTTPHandler(promhttp.Handler())
+}
+
+// Middleware with metrics for "github.com/fasthttp/router"
+func (m *httpServerMetric) FasthttpRouterMetricsMiddleware(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		now := time.Now()
+
+		next(ctx)
+
+		client := ""
+		if s, ok := ctx.UserValue(AuthClientKey).(string); ok {
+			client = s
+		}
+
+		status := strconv.Itoa(ctx.Response.StatusCode())
+		path := string(ctx.Path())
+		method := string(ctx.Method())
+
+		m.Inc(method, status, path, client)
+		m.WriteTiming(now, method, status, path, client)
+	}
+}
+
+// Handler with metrics for "github.com/qiangxue/fasthttp-routing"
+func GetFasthttpRoutingHandler() routing.Handler {
+	return func(rctx *routing.Context) error {
+		fasthttpadaptor.NewFastHTTPHandler(promhttp.Handler())(rctx.RequestCtx)
+		return nil
+	}
+}
+
+// Middleware with metrics for "github.com/qiangxue/fasthttp-routing"
+func (m *httpServerMetric) FasthttpRoutingMetricsMiddleware(rctx *routing.Context) error {
+	now := time.Now()
+
+	rctx.Next()
+
+	client := ""
+	if s, ok := rctx.UserValue(AuthClientKey).(string); ok {
+		client = s
+	}
+
+	status := strconv.Itoa(rctx.Response.StatusCode())
+	path := string(rctx.Path())
+	method := string(rctx.Method())
+
+	m.Inc(method, status, path, client)
+	m.WriteTiming(now, method, status, path, client)
+
+	return nil
 }
