@@ -16,11 +16,11 @@ type gauge struct {
 
 var _ Gauge = (*gauge)(nil)
 
-func NewGauge(appName, name, namespace, subsystem, service, subject string, labels ...string) *gauge {
+func NewGauge(namespace, subsystem, service, gaugeName, subject string, labels ...string) *gauge {
 	gaugeVec := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: name,
-			Help: "What is the value of " + name,
+			Name: gaugeName,
+			Help: "What is the value of " + gaugeName,
 			ConstLabels: prometheus.Labels{
 				"namespace": namespace,
 				"subsystem": subsystem,
